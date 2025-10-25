@@ -5,6 +5,7 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta
+import math
 
 try:
     import speech_recognition as sr
@@ -65,13 +66,131 @@ else:
     print("Por favor, instala ffmpeg y asegúrate de que esté en el PATH del sistema")
     print("O coloca los archivos ffmpeg.exe y ffprobe.exe en la misma carpeta que este script")
 
+class RoundedButton(tk.Canvas):
+    """Botón redondeado estilo CSS"""
+    def __init__(self, parent, text, command=None, bg="#2196F3", fg="white", 
+                 font=("Segoe UI", 10), width=120, height=35, radius=15):
+        super().__init__(parent, width=width, height=height, highlightthickness=0, 
+                        bg=parent.cget("bg") if hasattr(parent, 'cget') else "#f0f0f0")
+        
+        self.command = command
+        self.bg = bg
+        self.fg = fg
+        self.font = font
+        self.radius = radius
+        self.width = width
+        self.height = height
+        
+        # Crear el botón redondeado
+        self.create_rounded_rect()
+        self.create_text()
+        
+        # Bind eventos
+        self.bind("<Button-1>", self.on_click)
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+        
+    def create_rounded_rect(self):
+        """Crea un rectángulo redondeado"""
+        self.delete("all")
+        
+        # Colores
+        fill_color = self.bg
+        
+        # Crear rectángulo redondeado
+        self.create_rounded_rectangle(
+            2, 2, self.width-2, self.height-2,
+            radius=self.radius, fill=fill_color, outline=""
+        )
+    
+    def create_rounded_rectangle(self, x1, y1, x2, y2, radius=15, **kwargs):
+        """Función para crear rectángulo redondeado"""
+        points = []
+        
+        # Esquinas redondeadas
+        for x, y in [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]:
+            if x == x1 and y == y1:  # Esquina superior izquierda
+                for i in range(90, 180, 5):
+                    angle = math.radians(i)
+                    px = x1 + radius + radius * math.cos(angle)
+                    py = y1 + radius + radius * math.sin(angle)
+                    points.extend([px, py])
+            elif x == x2 and y == y1:  # Esquina superior derecha
+                for i in range(0, 90, 5):
+                    angle = math.radians(i)
+                    px = x2 - radius + radius * math.cos(angle)
+                    py = y1 + radius + radius * math.sin(angle)
+                    points.extend([px, py])
+            elif x == x2 and y == y2:  # Esquina inferior derecha
+                for i in range(270, 360, 5):
+                    angle = math.radians(i)
+                    px = x2 - radius + radius * math.cos(angle)
+                    py = y2 - radius + radius * math.sin(angle)
+                    points.extend([px, py])
+            elif x == x1 and y == y2:  # Esquina inferior izquierda
+                for i in range(180, 270, 5):
+                    angle = math.radians(i)
+                    px = x1 + radius + radius * math.cos(angle)
+                    py = y2 - radius + radius * math.sin(angle)
+                    points.extend([px, py])
+        
+        return self.create_polygon(points, **kwargs)
+    
+    def create_text(self):
+        """Crea el texto del botón"""
+        self.create_text(
+            self.width//2, self.height//2,
+            text=self.text, fill=self.fg, font=self.font
+        )
+    
+    def on_click(self, event):
+        """Maneja el clic del botón"""
+        if self.command:
+            self.command()
+    
+    def on_enter(self, event):
+        """Efecto hover"""
+        # Cambiar color al pasar el mouse
+        hover_color = self.lighten_color(self.bg, 0.1)
+        self.create_rounded_rect()
+        self.create_text()
+    
+    def on_leave(self, event):
+        """Efecto al salir del mouse"""
+        self.create_rounded_rect()
+        self.create_text()
+    
+    def lighten_color(self, color, factor):
+        """Aclara un color"""
+        # Convertir hex a RGB
+        hex_color = color.lstrip('#')
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        
+        # Aclarar
+        r = min(255, int(r + (255 - r) * factor))
+        g = min(255, int(g + (255 - g) * factor))
+        b = min(255, int(b + (255 - b) * factor))
+        
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+class ModernCard(tk.Frame):
+    """Tarjeta moderna con sombra"""
+    def __init__(self, parent, bg="#ffffff", **kwargs):
+        super().__init__(parent, bg=bg, relief="flat", bd=0, **kwargs)
+        
+        # Crear efecto de sombra
+        self.shadow = tk.Frame(parent, bg="#000000", height=2)
+        self.shadow.place(in_=self, x=2, y=2, relwidth=1, relheight=1)
+
 class TranscriptorAudio:
     def __init__(self, root):
         self.root = root
-        self.root.title("Transcriptor de Audio")
-        self.root.geometry("600x500")
-        self.root.configure(bg="#f0f0f0")
+        self.root.title("🎵 Transcriptor de Audio Profesional")
+        self.root.geometry("800x800")
+        self.root.configure(bg="#f8f9fa")
+        self.root.resizable(True, True)
         
+        # Variables
         self.archivo_seleccionado = tk.StringVar()
         self.archivo_salida = tk.StringVar()
         self.progreso = tk.DoubleVar()
@@ -85,179 +204,259 @@ class TranscriptorAudio:
         self.tiempo_inicio = None
         self.segmentos_completados = 0
         
-        self.crear_interfaz()
+        self.crear_interfaz_moderna()
+    
+    def crear_interfaz_moderna(self):
+        """Crea una interfaz moderna y profesional"""
         
-    def crear_interfaz(self):
+        # Header con gradiente
+        header = tk.Frame(self.root, bg="#667eea", height=120)
+        header.pack(fill="x", pady=0)
+        header.pack_propagate(False)
+        
+        # Título principal
         titulo = tk.Label(
-            self.root, 
-            text="🎵 Transcriptor de Audio a Texto", 
-            font=("Arial", 16, "bold"),
-            bg="#f0f0f0",
-            fg="#2c3e50"
+            header,
+            text="🎵 Transcriptor de Audio",
+            font=("Segoe UI", 24, "bold"),
+            bg="#667eea",
+            fg="white"
         )
         titulo.pack(pady=20)
         
-        frame_archivo = tk.Frame(self.root, bg="#f0f0f0")
-        frame_archivo.pack(pady=10, padx=20, fill="x")
+        subtitulo = tk.Label(
+            header,
+            text="Convierte audio a texto con precisión profesional JASON",
+            font=("Segoe UI", 11),
+            bg="#667eea",
+            fg="#e8f0fe"
+        )
+        subtitulo.pack()
         
+        # Contenido principal
+        main_frame = tk.Frame(self.root, bg="#f8f9fa")
+        main_frame.pack(fill="both", expand=True, padx=30, pady=20)
+        
+        # Card 1: Selección de archivo
+        card1 = tk.Frame(main_frame, bg="white", relief="flat", bd=1)
+        card1.pack(fill="x", pady=(0, 15))
+        
+        # Título de la card
         tk.Label(
-            frame_archivo, 
-            text="Seleccionar archivo de audio:", 
-            font=("Arial", 10, "bold"),
-            bg="#f0f0f0"
-        ).pack(anchor="w")
+            card1,
+            text="📁 Seleccionar Archivo de Audio",
+            font=("Segoe UI", 14, "bold"),
+            bg="white",
+            fg="#2c3e50"
+        ).pack(pady=(15, 8), padx=20, anchor="w")
+        
+        # Botón de selección
+        btn_frame1 = tk.Frame(card1, bg="white")
+        btn_frame1.pack(fill="x", padx=20, pady=(0, 15))
         
         btn_seleccionar = tk.Button(
-            frame_archivo,
-            text="📁 Examinar archivos",
+            btn_frame1,
+            text="📂 Examinar Archivos",
             command=self.seleccionar_archivo,
             bg="#3498db",
             fg="white",
-            font=("Arial", 10, "bold"),
-            padx=20,
-            pady=5,
-            cursor="hand2"
+            font=("Segoe UI", 11, "bold"),
+            padx=30,
+            pady=12,
+            cursor="hand2",
+            relief="flat",
+            bd=0,
+            activebackground="#2980b9",
+            activeforeground="white"
         )
-        btn_seleccionar.pack(pady=5)
+        btn_seleccionar.pack(side="left")
         
+        # Label del archivo seleccionado
         self.label_archivo = tk.Label(
-            frame_archivo,
+            card1,
             textvariable=self.archivo_seleccionado,
             bg="#ecf0f1",
             fg="#2c3e50",
-            font=("Arial", 9),
+            font=("Segoe UI", 10),
             wraplength=500,
-            justify="left"
+            justify="left",
+            relief="flat",
+            bd=8,
+            padx=15,
+            pady=10
         )
-        self.label_archivo.pack(pady=5, fill="x")
+        self.label_archivo.pack(fill="x", padx=20, pady=(0, 20))
         
-        frame_salida = tk.Frame(self.root, bg="#f0f0f0")
-        frame_salida.pack(pady=10, padx=20, fill="x")
+        # Card 2: Ubicación de salida
+        card2 = tk.Frame(main_frame, bg="white", relief="flat", bd=1)
+        card2.pack(fill="x", pady=(0, 15))
         
+        # Título de la card
         tk.Label(
-            frame_salida, 
-            text="Archivo de salida:", 
-            font=("Arial", 10, "bold"),
-            bg="#f0f0f0"
-        ).pack(anchor="w")
+            card2,
+            text="💾 Ubicación de Guardado",
+            font=("Segoe UI", 14, "bold"),
+            bg="white",
+            fg="#2c3e50"
+        ).pack(pady=(15, 8), padx=20, anchor="w")
+        
+        # Botón de selección de salida
+        btn_frame2 = tk.Frame(card2, bg="white")
+        btn_frame2.pack(fill="x", padx=20, pady=(0, 15))
         
         btn_salida = tk.Button(
-            frame_salida,
-            text="💾 Seleccionar ubicación de guardado",
+            btn_frame2,
+            text="📁 Seleccionar Ubicación",
             command=self.seleccionar_salida,
-            bg="#27ae60",
+            bg="#e74c3c",
             fg="white",
-            font=("Arial", 10, "bold"),
-            padx=20,
-            pady=5,
-            cursor="hand2"
+            font=("Segoe UI", 11, "bold"),
+            padx=30,
+            pady=12,
+            cursor="hand2",
+            relief="flat",
+            bd=0,
+            activebackground="#c0392b",
+            activeforeground="white"
         )
-        btn_salida.pack(pady=5)
+        btn_salida.pack(side="left")
         
+        # Label del archivo de salida
         self.label_salida = tk.Label(
-            frame_salida,
+            card2,
             textvariable=self.archivo_salida,
             bg="#ecf0f1",
             fg="#2c3e50",
-            font=("Arial", 9),
+            font=("Segoe UI", 10),
             wraplength=500,
-            justify="left"
+            justify="left",
+            relief="flat",
+            bd=8,
+            padx=15,
+            pady=10
         )
-        self.label_salida.pack(pady=5, fill="x")
+        self.label_salida.pack(fill="x", padx=20, pady=(0, 20))
         
-        frame_controles = tk.Frame(self.root, bg="#f0f0f0")
-        frame_controles.pack(pady=20, padx=20, fill="x")
+        # Card 3: Controles y progreso
+        card3 = tk.Frame(main_frame, bg="white", relief="flat", bd=1)
+        card3.pack(fill="x", pady=(0, 15))
         
+        # Título de la card
+        tk.Label(
+            card3,
+            text="🎤 Control de Transcripción",
+            font=("Segoe UI", 14, "bold"),
+            bg="white",
+            fg="#2c3e50"
+        ).pack(pady=(15, 10), padx=20, anchor="w")
+        
+        # Frame para botón y progreso
+        control_frame = tk.Frame(card3, bg="white")
+        control_frame.pack(fill="x", padx=20, pady=(0, 15))
+        
+        # Botón principal de transcripción
         self.btn_transcribir = tk.Button(
-            frame_controles,
-            text="🎤 Iniciar Transcripción",
+            control_frame,
+            text="🚀 Iniciar Transcripción",
             command=self.iniciar_transcripcion,
-            bg="#e74c3c",
+            bg="#27ae60",
             fg="white",
-            font=("Arial", 12, "bold"),
-            padx=30,
-            pady=10,
+            font=("Segoe UI", 12, "bold"),
+            padx=40,
+            pady=15,
             cursor="hand2",
-            state="disabled"
+            state="normal",
+            relief="flat",
+            bd=0,
+            activebackground="#229954",
+            activeforeground="white"
         )
-        self.btn_transcribir.pack(side="left", padx=10)
+        self.btn_transcribir.pack(side="left", padx=(0, 20))
         
-        # Frame para la barra de progreso mejorada
-        frame_progreso = tk.Frame(frame_controles, bg="#f0f0f0")
-        frame_progreso.pack(side="left", padx=10, fill="x", expand=True)
+        # Frame de progreso
+        progress_frame = tk.Frame(control_frame, bg="white")
+        progress_frame.pack(side="left", fill="x", expand=True)
         
-        # Barra de progreso principal
+        # Barra de progreso
         self.progress_bar = ttk.Progressbar(
-            frame_progreso,
+            progress_frame,
             variable=self.progreso,
             maximum=100,
-            length=200,
+            length=300,
             mode='determinate',
-            style="Custom.Horizontal.TProgressbar"
+            style="Modern.Horizontal.TProgressbar"
         )
-        self.progress_bar.pack(fill="x", pady=2)
+        self.progress_bar.pack(fill="x", pady=(0, 5))
         
-        # Información detallada del progreso
-        frame_info_progreso = tk.Frame(frame_progreso, bg="#f0f0f0")
-        frame_info_progreso.pack(fill="x", pady=2)
+        # Información de progreso
+        info_frame = tk.Frame(progress_frame, bg="white")
+        info_frame.pack(fill="x")
         
-        # Porcentaje y tiempo restante
         tk.Label(
-            frame_info_progreso,
+            info_frame,
             textvariable=self.progreso_detallado,
-            font=("Arial", 9, "bold"),
-            bg="#f0f0f0",
-            fg="#2c3e50"
+            font=("Segoe UI", 10, "bold"),
+            bg="white",
+            fg="#27ae60"
         ).pack(side="left")
         
         tk.Label(
-            frame_info_progreso,
+            info_frame,
             textvariable=self.tiempo_restante,
-            font=("Arial", 8),
-            bg="#f0f0f0",
+            font=("Segoe UI", 9),
+            bg="white",
             fg="#7f8c8d"
         ).pack(side="right")
         
         # Información de segmentos
-        frame_segmentos = tk.Frame(frame_progreso, bg="#f0f0f0")
-        frame_segmentos.pack(fill="x", pady=1)
+        segment_frame = tk.Frame(progress_frame, bg="white")
+        segment_frame.pack(fill="x", pady=(5, 0))
         
         tk.Label(
-            frame_segmentos,
+            segment_frame,
             textvariable=self.segmento_actual,
-            font=("Arial", 8),
-            bg="#f0f0f0",
-            fg="#34495e"
+            font=("Segoe UI", 9),
+            bg="white",
+            fg="#95a5a6"
         ).pack(side="left")
         
         tk.Label(
-            frame_segmentos,
+            segment_frame,
             textvariable=self.total_segmentos,
-            font=("Arial", 8),
-            bg="#f0f0f0",
-            fg="#34495e"
+            font=("Segoe UI", 9),
+            bg="white",
+            fg="#95a5a6"
         ).pack(side="right")
         
-        frame_estado = tk.Frame(self.root, bg="#f0f0f0")
-        frame_estado.pack(pady=10, padx=20, fill="x")
+        # Card 4: Estado
+        card4 = tk.Frame(main_frame, bg="white", relief="flat", bd=1)
+        card4.pack(fill="x")
         
+        # Título de la card
         tk.Label(
-            frame_estado,
-            text="Estado:",
-            font=("Arial", 10, "bold"),
-            bg="#f0f0f0"
-        ).pack(anchor="w")
+            card4,
+            text="📊 Estado del Proceso",
+            font=("Segoe UI", 14, "bold"),
+            bg="white",
+            fg="#2c3e50"
+        ).pack(pady=(15, 8), padx=20, anchor="w")
         
+        # Label de estado
         self.label_estado = tk.Label(
-            frame_estado,
+            card4,
             textvariable=self.estado,
             bg="#ecf0f1",
             fg="#2c3e50",
-            font=("Arial", 9),
-            wraplength=500,
-            justify="left"
+            font=("Segoe UI", 10),
+            wraplength=600,
+            justify="left",
+            relief="flat",
+            bd=8,
+            padx=15,
+            pady=12
         )
-        self.label_estado.pack(pady=5, fill="x")
+        self.label_estado.pack(fill="x", padx=20, pady=(0, 20))
+    
         
     def seleccionar_archivo(self):
         tipos_archivo = [
@@ -335,6 +534,15 @@ class TranscriptorAudio:
         self.root.update_idletasks()
             
     def iniciar_transcripcion(self):
+        # Verificar que se hayan seleccionado los archivos
+        if not self.archivo_seleccionado.get():
+            messagebox.showerror("Error", "Por favor selecciona un archivo de audio")
+            return
+        
+        if not self.archivo_salida.get():
+            messagebox.showerror("Error", "Por favor selecciona la ubicación de guardado")
+            return
+        
         self.btn_transcribir.config(state="disabled")
         self.tiempo_inicio = time.time()
         self.segmentos_completados = 0
@@ -484,12 +692,12 @@ def main():
     style.theme_use('clam')
     
     # Crear estilo personalizado para la barra de progreso
-    style.configure("Custom.Horizontal.TProgressbar",
-                   background='#3498db',
+    style.configure("Modern.Horizontal.TProgressbar",
+                   background='#27ae60',
                    troughcolor='#ecf0f1',
                    borderwidth=0,
-                   lightcolor='#3498db',
-                   darkcolor='#3498db')
+                   lightcolor='#27ae60',
+                   darkcolor='#229954')
     
     app = TranscriptorAudio(root)
     root.mainloop()
